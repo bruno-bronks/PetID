@@ -1,0 +1,109 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmyp.json
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite3
+db_data/
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# Logs
+*.log
+logs/
+app.log
+
+# ML Models cache
+.cache/
+*.pth
+*.pt
+*.onnx
+models/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Alembic cache
+alembic/__pycache__/
+
+# Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Coverage
+htmlcov/
+.coverage
+*.cover
+
+# Security
+*.pem
+*.key
+*.crt
+credentials.json
+secrets/
+
+# MinIO
+minio_data/
+
+# Claude Code
+.claude/
+
+# Agent data
+.agent/
