@@ -92,7 +92,7 @@ class MLEmbeddingService:
         Decodifica imagem base64 para PIL Image.
 
         Args:
-            image_base64: String base64 da imagem
+            image_base64: String base64 da imagem (com ou sem prefixo data:image/...)
 
         Returns:
             PIL.Image: Imagem decodificada
@@ -101,6 +101,10 @@ class MLEmbeddingService:
             ValueError: Se a imagem for inválida
         """
         try:
+            # Remove prefixo data:image/...;base64, se existir
+            if ',' in image_base64 and image_base64.startswith('data:'):
+                image_base64 = image_base64.split(',', 1)[1]
+
             image_data = base64.b64decode(image_base64)
             image = Image.open(io.BytesIO(image_data))
 

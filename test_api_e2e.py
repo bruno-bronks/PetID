@@ -144,17 +144,18 @@ def test_login(user_data):
     """Testa login de usuário."""
     print_header("3. Fazendo Login")
 
+    # OAuth2 espera form data com username/password
     login_data = {
-        "email": user_data["email"],
+        "username": user_data["email"],  # OAuth2 usa 'username' ao invés de 'email'
         "password": user_data["password"]
     }
 
-    print_info(f"Fazendo login: {login_data['email']}")
+    print_info(f"Fazendo login: {user_data['email']}")
 
     try:
         response = requests.post(
             f"{API_URL}/api/v1/auth/login",
-            json=login_data,
+            data=login_data,  # Usar 'data' para form data, não 'json'
             timeout=10
         )
 
@@ -184,8 +185,7 @@ def test_create_pet(token):
         "breed": "Labrador",
         "birth_date": "2020-01-15",
         "sex": "male",
-        "color": "Dourado",
-        "weight": 25.5
+        "weight": "25.5"  # weight deve ser string
     }
 
     print_info(f"Criando pet: {pet_data['name']}")
@@ -226,7 +226,7 @@ def test_register_biometry(token, pet_id):
 
     biometry_data = {
         "pet_id": pet_id,
-        "snout_image": snout_image
+        "image_base64": snout_image
     }
 
     print_info(f"Registrando biometria para pet ID: {pet_id}")
@@ -274,7 +274,9 @@ def test_identify_pet(token):
     snout_image = generate_fake_snout_image()
 
     identify_data = {
-        "snout_image": snout_image
+        "image_base64": snout_image,
+        "threshold": 0.85,
+        "max_results": 5
     }
 
     print_info("Enviando imagem para identificação...")
@@ -283,7 +285,7 @@ def test_identify_pet(token):
 
     try:
         response = requests.post(
-            f"{API_URL}/api/v1/biometry/identify",
+            f"{API_URL}/api/v1/biometry/search",
             json=identify_data,
             headers=headers,
             timeout=60
@@ -292,11 +294,13 @@ def test_identify_pet(token):
         if response.status_code == 200:
             result = response.json()
 
-            if result.get("match"):
+            if result.get("found"):
                 print_success("Pet identificado com sucesso!")
-                print_info(f"Pet ID: {result.get('pet_id')}")
-                print_info(f"Nome: {result.get('pet_name')}")
-                print_info(f"Similaridade: {result.get('similarity_score', 0):.2%}")
+                pet_result = result.get("results", [])[0] if result.get("results") else None
+                if pet_result:
+                    print_info(f"Pet ID: {pet_result.get('pet_id')}")
+                    print_info(f"Nome: {pet_result.get('pet_name')}")
+                    print_info(f"Similaridade: {pet_result.get('similarity', 0):.2%}")
                 return result
             else:
                 print_warning("Nenhum pet identificado (similaridade muito baixa)")

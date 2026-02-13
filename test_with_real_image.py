@@ -30,7 +30,7 @@ def register_biometry(token, pet_id, image_path):
 
     data = {
         "pet_id": pet_id,
-        "snout_image": snout_image
+        "image_base64": snout_image
     }
 
     headers = {"Authorization": f"Bearer {token}"}
@@ -70,11 +70,15 @@ def identify_pet(token, image_path):
 
     snout_image = image_to_base64(image_path)
 
-    data = {"snout_image": snout_image}
+    data = {
+        "image_base64": snout_image,
+        "threshold": 0.85,
+        "max_results": 5
+    }
     headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.post(
-        f"{API_URL}/api/v1/biometry/identify",
+        f"{API_URL}/api/v1/biometry/search",
         json=data,
         headers=headers,
         timeout=60
@@ -83,19 +87,21 @@ def identify_pet(token, image_path):
     if response.status_code == 200:
         result = response.json()
 
-        if result.get("match"):
+        if result.get("found"):
             print("✅ Pet identificado!")
-            print(f"   Pet ID: {result.get('pet_id')}")
-            print(f"   Nome: {result.get('pet_name')}")
-            print(f"   Similaridade: {result.get('similarity_score', 0):.2%}")
+            pet_result = result.get("results", [])[0] if result.get("results") else None
+            if pet_result:
+                print(f"   Pet ID: {pet_result.get('pet_id')}")
+                print(f"   Nome: {pet_result.get('pet_name')}")
+                print(f"   Similaridade: {pet_result.get('similarity', 0):.2%}")
 
-            # Threshold padrão é 0.85 (85%)
-            if result.get('similarity_score', 0) > 0.95:
-                print(f"\n🎯 Confiança MUITO ALTA!")
-            elif result.get('similarity_score', 0) > 0.85:
-                print(f"\n✓ Confiança alta")
-            else:
-                print(f"\n⚠️  Confiança média")
+                # Threshold padrão é 0.85 (85%)
+                if pet_result.get('similarity', 0) > 0.95:
+                    print(f"\n🎯 Confiança MUITO ALTA!")
+                elif pet_result.get('similarity', 0) > 0.85:
+                    print(f"\n✓ Confiança alta")
+                else:
+                    print(f"\n⚠️  Confiança média")
 
             return result
         else:
