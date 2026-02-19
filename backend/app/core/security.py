@@ -9,18 +9,33 @@ from app.db.session import get_db
 from sqlalchemy.orm import Session
 from app.models.user import User
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
+
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica se a senha está correta"""
-    return pwd_context.verify(plain_password, hashed_password)
+    # return pwd_context.verify(plain_password, hashed_password)
+    try:
+        if isinstance(plain_password, str):
+            plain_password = plain_password.encode('utf-8')
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(plain_password, hashed_password)
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """Gera hash da senha"""
-    return pwd_context.hash(password)
+    # return pwd_context.hash(password)
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    # Gera salt e hash
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password, salt).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

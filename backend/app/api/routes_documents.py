@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 import uuid
 from datetime import datetime
 from app.db.session import get_db
@@ -14,6 +15,77 @@ from app.core.security import get_current_user
 from app.core.config import settings
 
 router = APIRouter()
+
+
+@router.post("/{pet_id}/photo", status_code=status.HTTP_200_OK)
+async def upload_pet_photo(
+    pet_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload ou substituição da foto do pet"""
+    pet = check_pet_access(pet_id, current_user, db)
+
+    # Validar tipo de imagem
+    allowed_types = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use uma imagem JPEG, PNG ou WebP.",
+        )
+
+    s3_client = get_s3_client()
+    bucket = settings.S3_BUCKET
+
+    # Garante que o bucket existe
+    try:
+        s3_client.head_bucket(Bucket=bucket)
+    except ClientError:
+        s3_client.create_bucket(Bucket=bucket)
+
+    # Remove foto antiga se existir
+    if pet.photo_url:
+        try:
+            old_key = pet.photo_url.split(f"{bucket}/")[-1].split("?")[0]
+            s3_client.delete_object(Bucket=bucket, Key=old_key)
+        except Exception:
+            pass
+
+    # Upload nova foto
+    file_ext = (file.filename or "photo").rsplit(".", 1)[-1].lower()
+    s3_key = f"photos/{pet_id}/{uuid.uuid4()}.{file_ext}"
+    try:
+        file_content = await file.read()
+        s3_client.put_object(
+            Bucket=bucket,
+            Key=s3_key,
+            Body=file_content,
+            ContentType=file.content_type,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao fazer upload: {str(e)}",
+        )
+
+    # Gera presigned URL (24h) para usar como photo_url
+    try:
+        photo_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": s3_key},
+            ExpiresIn=86400,
+        )
+    except Exception:
+        photo_url = f"{settings.S3_ENDPOINT}/{bucket}/{s3_key}"
+
+    # Persiste a chave S3 no pet (usando a chave, não URL assinada)
+    # Armazenamos a chave para gerar presigned URL sob demanda
+    pet.photo_url = f"{settings.S3_ENDPOINT}/{bucket}/{s3_key}"
+    db.commit()
+
+    return {"photo_url": photo_url, "s3_key": s3_key}
+
 
 
 def get_s3_client():
