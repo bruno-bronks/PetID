@@ -1,9 +1,20 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { PawPrint, Phone, AlertTriangle, Heart, MapPin, MessageCircle, ScanFace } from 'lucide-react';
+import { PawPrint, Phone, AlertTriangle, Heart, MapPin, MessageCircle, ScanFace, Pill } from 'lucide-react';
 
 // --- Type ---
+interface VaccinePublic {
+    title: string;
+    event_date: string;
+}
+
+interface MedicationPublic {
+    name: string;
+    dosage: string | null;
+    frequency: string | null;
+}
+
 interface PetPublicProfile {
     id: number;
     name: string;
@@ -15,6 +26,8 @@ interface PetPublicProfile {
     owner_name: string | null;
     owner_phone: string | null;
     has_biometry: boolean;
+    vaccines: VaccinePublic[];
+    active_medications: MedicationPublic[];
 }
 
 const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
@@ -142,6 +155,44 @@ export default async function PublicPetPage({ params }: { params: Promise<{ id: 
                         </div>
 
                         <hr className="border-gray-100" />
+
+                        {/* Medical Summary */}
+                        {(pet.vaccines.length > 0 || pet.active_medications.length > 0) && (
+                            <div className="space-y-4">
+                                {pet.vaccines.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                                            <Heart className="h-3 w-3" /> Vacinas recentes
+                                        </p>
+                                        <div className="space-y-1.5">
+                                            {pet.vaccines.map((v, i) => (
+                                                <div key={i} className="flex items-center justify-between text-xs">
+                                                    <span className="text-gray-700 font-medium">{v.title}</span>
+                                                    <span className="text-gray-400">{new Date(v.event_date).toLocaleDateString('pt-BR')}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {pet.active_medications.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                                            <Pill className="h-3 w-3" /> Medicamentos em uso
+                                        </p>
+                                        <div className="space-y-1.5">
+                                            {pet.active_medications.map((m, i) => (
+                                                <div key={i} className="rounded-lg bg-orange-50 px-2.5 py-2 text-xs">
+                                                    <p className="font-semibold text-orange-800">{m.name}</p>
+                                                    <p className="text-orange-600 opacity-80">{m.dosage} · {m.frequency}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <hr className="border-gray-100" />
+                            </div>
+                        )}
 
                         {/* Owner info */}
                         {(pet.owner_name || pet.owner_phone) && (

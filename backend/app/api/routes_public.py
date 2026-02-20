@@ -40,6 +40,9 @@ def mask_phone(phone: str) -> str:
     return phone[:3] + "*" * (len(phone) - 5) + phone[-2:]
 
 
+from app.models.record import MedicalRecord
+from app.models.medication import Medication
+
 # ==================== PERFIL PÚBLICO (QR CODE) ====================
 
 @router.get("/pet/{pet_id}", response_model=PetPublicProfile)
@@ -74,6 +77,18 @@ async def get_public_pet_profile(
         SnoutBiometry.is_active == True
     ).first() is not None
     
+    # Busca vacinas recentes (últimas 5)
+    vaccines = db.query(MedicalRecord).filter(
+        MedicalRecord.pet_id == pet_id,
+        MedicalRecord.type == 'vaccine'
+    ).order_by(MedicalRecord.event_date.desc()).limit(5).all()
+    
+    # Busca medicamentos ativos
+    active_meds = db.query(Medication).filter(
+        Medication.pet_id == pet_id,
+        Medication.is_active == True
+    ).all()
+    
     # Busca dados do dono
     owner = db.query(User).filter(User.id == pet.owner_id).first()
     
@@ -87,7 +102,20 @@ async def get_public_pet_profile(
         is_lost=is_lost,
         owner_name=owner.full_name if owner else None,
         owner_phone=mask_phone(owner.phone) if owner and owner.phone else None,
-        has_biometry=has_biometry
+        has_biometry=has_biometry,
+        vaccines=[
+            {"title": v.title, "event_date": v.event_date}
+            for v in vaccines
+        ],
+        active_medications=[
+            {
+                "name": m.name,
+                "dosage": m.dosage,
+                "frequency": m.frequency,
+                "is_active": m.is_active
+            }
+            for m in active_meds
+        ]
     )
 
 

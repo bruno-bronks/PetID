@@ -16,7 +16,7 @@ import RecordAttachmentsButton from '@/components/pets/RecordAttachmentsButton';
 import {
     ArrowLeft, Edit, Trash2, Loader2, PawPrint,
     Stethoscope, Syringe, Pill, Calendar, User as UserIcon,
-    AlertTriangle, Phone, Mail, MapPin as MapPinIcon, FileText, ScanFace,
+    AlertTriangle, Phone, Mail, MapPin as MapPinIcon, FileText, ScanFace, CreditCard,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -317,8 +317,14 @@ export default function PetDetailPage() {
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <PetQRCodeModal petId={petId} petName={pet.name} />
+                    <Button variant="outline" asChild>
+                        <Link href={`/pets/${petId}/card`}>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Cartão
+                        </Link>
+                    </Button>
                     <Button variant="outline" asChild>
                         <Link href={`/pets/${petId}/edit`}>
                             <Edit className="mr-2 h-4 w-4" />

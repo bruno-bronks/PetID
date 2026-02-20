@@ -84,6 +84,24 @@ class NearbyReportsRequest(BaseModel):
     report_type: Optional[str] = None  # 'lost', 'found', ou None para ambos
 
 
+class VaccinePublic(BaseModel):
+    title: str
+    event_date: date
+
+    class Config:
+        from_attributes = True
+
+
+class MedicationPublic(BaseModel):
+    name: str
+    dosage: Optional[str]
+    frequency: Optional[str]
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
 class PetPublicProfile(BaseModel):
     """Perfil público do pet (para QR Code)"""
     id: int
@@ -96,6 +114,8 @@ class PetPublicProfile(BaseModel):
     owner_name: Optional[str]
     owner_phone: Optional[str]  # Mascarado
     has_biometry: bool = False
+    vaccines: List[VaccinePublic] = []
+    active_medications: List[MedicationPublic] = []
     
     class Config:
         from_attributes = True
