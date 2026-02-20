@@ -381,90 +381,130 @@ export default function PetDetailPage() {
                 </div>
             </div>
 
-            {/* Info Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <UserIcon className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                            <p className="text-xs text-muted-foreground">Sexo</p>
-                            <p className="text-sm font-medium">{sexLabel[pet.sex ?? 'unknown'] ?? pet.sex}</p>
+            {/* Info Grid */}
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <div className="rounded-2xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+                            <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div>
-                            <p className="text-xs text-muted-foreground">Nascimento</p>
-                            <p className="text-sm font-medium">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Sexo</p>
+                            <p className="text-sm font-bold">{sexLabel[pet.sex ?? 'unknown'] ?? pet.sex}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">
+                            <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Nascimento</p>
+                            <p className="text-sm font-bold">
                                 {pet.birth_date
                                     ? new Date(pet.birth_date).toLocaleDateString('pt-BR')
                                     : 'Não informado'}
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <span className="text-base">🎨</span>
-                        <div>
-                            <p className="text-xs text-muted-foreground">Cor / Pelagem</p>
-                            <p className="text-sm font-medium">{pet.color || 'Não informado'}</p>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+                            <span className="text-sm">🎨</span>
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <span className="text-base">🔖</span>
                         <div>
-                            <p className="text-xs text-muted-foreground">Microchip</p>
-                            <p className="text-sm font-medium font-mono">{pet.microchip || '—'}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Cor / Pelagem</p>
+                            <p className="text-sm font-bold">{pet.color || 'Não informado'}</p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                            <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Microchip</p>
+                            <p className="text-sm font-bold font-mono">{pet.microchip || '—'}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Tabs */}
-            <Tabs defaultValue="timeline">
-                <TabsList className="w-full flex-wrap justify-start h-auto gap-1 bg-transparent border-b rounded-none mb-4 p-0">
-                    <TabsTrigger value="timeline" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
-                        <History className="mr-2 h-4 w-4" />
-                        Timeline
-                    </TabsTrigger>
-                    <TabsTrigger value="records" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
-                        <Stethoscope className="mr-2 h-4 w-4" />
-                        Prontuário ({otherRecords.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="vaccines" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
-                        <Syringe className="mr-2 h-4 w-4" />
-                        Vacinas ({vaccines.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="medications" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
-                        <Pill className="mr-2 h-4 w-4" />
-                        Medicamentos ({medications?.length ?? 0})
-                    </TabsTrigger>
-                    <TabsTrigger value="veterinarians" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
-                        <Stethoscope className="mr-2 h-4 w-4" />
-                        Vets ({veterinarians?.length ?? 0})
-                    </TabsTrigger>
-                    <TabsTrigger value="documents" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Documentos
-                    </TabsTrigger>
-                    <TabsTrigger value="biometry" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
-                        <ScanFace className="mr-2 h-4 w-4" />
-                        Biometria
-                    </TabsTrigger>
-                </TabsList>
+            {/* Tabs Navigation */}
+            <Tabs defaultValue="timeline" className="w-full">
+                <div className="overflow-x-auto pb-2 scrollbar-hide">
+                    <TabsList className="inline-flex h-12 items-center justify-start rounded-xl bg-muted/50 p-1.5 text-muted-foreground gap-1 border">
+                        <TabsTrigger
+                            value="timeline"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <History className="mr-2 h-4 w-4" />
+                            Timeline
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="records"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <Stethoscope className="mr-2 h-4 w-4" />
+                            Prontuário
+                            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">{otherRecords.length}</Badge>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="vaccines"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <Syringe className="mr-2 h-4 w-4" />
+                            Vacinas
+                            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">{vaccines.length}</Badge>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="medications"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <Pill className="mr-2 h-4 w-4" />
+                            Meds
+                            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">{medications?.length ?? 0}</Badge>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="documents"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Documentos
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="veterinarians"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <UserIcon className="mr-2 h-4 w-4" />
+                            Vets
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="biometry"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            <ScanFace className="mr-2 h-4 w-4" />
+                            Bio
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
                 {/* Timeline Tab */}
-                <TabsContent value="timeline" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Linha do Tempo de Saúde</CardTitle>
+                <TabsContent value="timeline" className="mt-6 animate-in fade-in-50 duration-300">
+                    <Card className="overflow-hidden border-2 border-primary/5">
+                        <CardHeader className="bg-muted/30">
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <History className="h-5 w-5 text-primary" />
+                                Linha do Tempo de Saúde
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pt-6">
                             <HealthTimeline records={records || []} />
                         </CardContent>
                     </Card>
