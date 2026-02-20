@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Camera, Loader2, Search, PawPrint, Phone, User, ScanFace, ArrowLeft, XCircle } from 'lucide-react';
+import { Camera, Loader2, Search, PawPrint, Phone, User, ScanFace, ArrowLeft, XCircle, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -214,6 +214,34 @@ export default function ScanPage() {
                                                                         <span>Telefone: <strong>{pet.owner_phone}</strong></span>
                                                                     </div>
                                                                 )}
+                                                                <div className="flex gap-2 mt-3">
+                                                                    {pet.owner_phone && (
+                                                                        <>
+                                                                            <a
+                                                                                href={`tel:${pet.owner_phone.replace(/\D/g, '')}`}
+                                                                                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+                                                                            >
+                                                                                <Phone className="h-3.5 w-3.5" />
+                                                                                Ligar
+                                                                            </a>
+                                                                            <a
+                                                                                href={`https://wa.me/55${pet.owner_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Ol\u00e1! Encontrei um pet que pode ser seu. Vi pelo sistema PetID.`)}`}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 transition-colors"
+                                                                            >
+                                                                                <MessageCircle className="h-3.5 w-3.5" />
+                                                                                WhatsApp
+                                                                            </a>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                                <Link
+                                                                    href={`/p/${pet.pet_id}`}
+                                                                    className="block text-center text-xs text-purple-600 hover:underline mt-2"
+                                                                >
+                                                                    Ver perfil completo →
+                                                                </Link>
                                                             </div>
                                                         </div>
                                                     ))}
