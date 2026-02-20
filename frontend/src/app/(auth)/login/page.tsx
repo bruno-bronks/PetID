@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { PawPrint, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -75,10 +76,13 @@ export default function LoginPage() {
             });
 
             setAuth(access_token, userResponse.data);
+            toast.success(`Bem-vindo, ${userResponse.data.full_name || userResponse.data.email}!`);
             router.push('/pets');
         } catch (err: any) {
             console.error(err);
-            setError('Credenciais inválidas ou erro no servidor.');
+            const message = err.response?.data?.detail || 'Credenciais inválidas ou erro no servidor.';
+            setError(message);
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }

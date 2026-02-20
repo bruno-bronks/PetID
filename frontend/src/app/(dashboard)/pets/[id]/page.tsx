@@ -16,8 +16,10 @@ import RecordAttachmentsButton from '@/components/pets/RecordAttachmentsButton';
 import {
     ArrowLeft, Edit, Trash2, Loader2, PawPrint,
     Stethoscope, Syringe, Pill, Calendar, User as UserIcon,
-    AlertTriangle, Phone, Mail, MapPin as MapPinIcon, FileText, ScanFace, CreditCard,
+    AlertTriangle, Phone, Mail, MapPin as MapPinIcon, FileText, ScanFace, CreditCard, History
 } from 'lucide-react';
+import HealthTimeline from './HealthTimeline';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -141,11 +143,23 @@ function DocumentsTab({ petId }: { petId: number }) {
             const res = await api.get(`/pets/${petId}/documents/${docId}/download`);
             window.open(res.data.download_url, '_blank');
         },
+        onSuccess: () => {
+            toast.success('Download iniciado.');
+        },
+        onError: () => {
+            toast.error('Erro ao baixar documento.');
+        }
     });
 
     const deleteMutation = useMutation({
         mutationFn: async (docId: number) => api.delete(`/pets/${petId}/documents/${docId}`),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents', petId] }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['documents', petId] });
+            toast.success('Arquivo removido com sucesso.');
+        },
+        onError: () => {
+            toast.error('Erro ao remover arquivo.');
+        }
     });
 
     const formatBytes = (bytes: number) => {
@@ -268,7 +282,11 @@ export default function PetDetailPage() {
         mutationFn: async () => api.delete(`/pets/${petId}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pets'] });
+            toast.success('Pet removido com sucesso.');
             router.push('/pets');
+        },
+        onError: () => {
+            toast.error('Erro ao remover pet.');
         },
     });
 
@@ -408,33 +426,49 @@ export default function PetDetailPage() {
             </div>
 
             {/* Tabs */}
-            <Tabs defaultValue="records">
-                <TabsList>
-                    <TabsTrigger value="records">
+            <Tabs defaultValue="timeline">
+                <TabsList className="w-full flex-wrap justify-start h-auto gap-1 bg-transparent border-b rounded-none mb-4 p-0">
+                    <TabsTrigger value="timeline" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
+                        <History className="mr-2 h-4 w-4" />
+                        Timeline
+                    </TabsTrigger>
+                    <TabsTrigger value="records" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
                         <Stethoscope className="mr-2 h-4 w-4" />
                         Prontuário ({otherRecords.length})
                     </TabsTrigger>
-                    <TabsTrigger value="vaccines">
+                    <TabsTrigger value="vaccines" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
                         <Syringe className="mr-2 h-4 w-4" />
                         Vacinas ({vaccines.length})
                     </TabsTrigger>
-                    <TabsTrigger value="medications">
+                    <TabsTrigger value="medications" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
                         <Pill className="mr-2 h-4 w-4" />
                         Medicamentos ({medications?.length ?? 0})
                     </TabsTrigger>
-                    <TabsTrigger value="veterinarians">
+                    <TabsTrigger value="veterinarians" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
                         <Stethoscope className="mr-2 h-4 w-4" />
-                        Veterinários ({veterinarians?.length ?? 0})
+                        Vets ({veterinarians?.length ?? 0})
                     </TabsTrigger>
-                    <TabsTrigger value="documents">
+                    <TabsTrigger value="documents" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
                         <FileText className="mr-2 h-4 w-4" />
                         Documentos
                     </TabsTrigger>
-                    <TabsTrigger value="biometry">
+                    <TabsTrigger value="biometry" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3">
                         <ScanFace className="mr-2 h-4 w-4" />
                         Biometria
                     </TabsTrigger>
                 </TabsList>
+
+                {/* Timeline Tab */}
+                <TabsContent value="timeline" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Linha do Tempo de Saúde</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <HealthTimeline records={records || []} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
                 {/* Records Tab */}
                 <TabsContent value="records" className="mt-4">

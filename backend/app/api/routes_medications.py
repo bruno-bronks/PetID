@@ -8,11 +8,32 @@ from app.models.pet import Pet
 from app.models.medication import Medication, MedicationLog
 from app.schemas.medication import (
     MedicationCreate, MedicationUpdate, MedicationResponse,
-    MedicationLogCreate, MedicationLogResponse
+    MedicationLogCreate, MedicationLogResponse, MedicationResponseWithPet
 )
 from app.core.security import get_current_user
 
 router = APIRouter()
+
+
+@router.get("/active", response_model=List[MedicationResponseWithPet])
+async def list_all_active_medications(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Lista todos os medicamentos ativos de todos os pets do usuário"""
+    medications = db.query(Medication).join(Pet).filter(
+        Pet.owner_id == current_user.id,
+        Medication.is_active == True
+    ).order_by(Medication.start_date.desc()).all()
+    
+    # Adiciona pet_name manualmente pois o schema espera pet_name
+    results = []
+    for med in medications:
+        resp = MedicationResponseWithPet.model_validate(med)
+        resp.pet_name = med.pet.name
+        results.append(resp)
+        
+    return results
 
 
 def check_pet_access(pet_id: int, user: User, db: Session) -> Pet:

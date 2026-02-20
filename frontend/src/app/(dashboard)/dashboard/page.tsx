@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { toast } from 'sonner';
 import {
     Loader2, PawPrint, Syringe, Activity, AlertCircle,
-    TrendingUp, CalendarDays, Stethoscope,
+    TrendingUp, CalendarDays, Stethoscope, Check, Pill
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,8 +18,9 @@ import {
 } from 'recharts';
 
 interface Pet { id: number; name: string; species: string; breed: string; }
-interface VaccineReminder { id: number; vaccine_name: string; scheduled_date: string; is_completed: boolean; pet_id: number; }
+interface VaccineReminder { id: number; vaccine_name: string; scheduled_date: string; is_completed: boolean; pet_id: number; pet_name?: string; }
 interface UpcomingVaccinesResponse { upcoming: VaccineReminder[]; overdue: VaccineReminder[]; total_pending: number; }
+interface Medication { id: number; name: string; dosage: string; frequency: string; pet_id: number; pet_name: string; is_active: boolean; }
 
 const SPECIES_COLORS: Record<string, string> = {
     dog: '#f59e0b',
@@ -30,6 +32,8 @@ const SPECIES_LABELS: Record<string, string> = { dog: 'Cão', cat: 'Gato', other
 export default function DashboardPage() {
     const [_tab] = useState('overview');
 
+    const queryClient = useQueryClient();
+
     const { data: pets, isLoading: petsLoading } = useQuery<Pet[]>({
         queryKey: ['pets'],
         queryFn: async () => (await api.get('/pets/')).data,
@@ -40,7 +44,27 @@ export default function DashboardPage() {
         queryFn: async () => (await api.get('/vaccines/upcoming?days_ahead=30')).data,
     });
 
-    const isLoading = petsLoading || vaccinesLoading;
+    const { data: medications, isLoading: medsLoading } = useQuery<Medication[]>({
+        queryKey: ['medications', 'active'],
+        queryFn: async () => (await api.get('/medications/active')).data,
+    });
+
+    const completeVaccine = useMutation({
+        mutationFn: async (id: number) => {
+            return api.post(`/vaccines/${id}/complete`, {
+                completed_date: new Date().toISOString().split('T')[0],
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vaccines'] });
+            toast.success('Vacina marcada como aplicada!');
+        },
+        onError: () => {
+            toast.error('Erro ao marcar vacina como aplicada.');
+        },
+    });
+
+    const isLoading = petsLoading || vaccinesLoading || medsLoading;
 
     // Derived data for charts
     const speciesGroups = pets?.reduce<Record<string, number>>((acc, pet) => {
@@ -231,22 +255,74 @@ export default function DashboardPage() {
                         {(!vaccineData?.overdue?.length && !vaccineData?.upcoming?.length) ? (
                             <p className="text-sm text-muted-foreground text-center py-6">✅ Todas as vacinas estão em dia!</p>
                         ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {vaccineData?.overdue?.slice(0, 3).map((v) => (
-                                    <div key={v.id} className="flex items-center gap-3 rounded-md border border-red-100 bg-red-50 p-2">
-                                        <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                                    <div key={v.id} className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 p-2.5">
+                                        <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-red-700 truncate">{v.vaccine_name}</p>
-                                            <p className="text-xs text-red-500">Venceu em {new Date(v.scheduled_date).toLocaleDateString('pt-BR')}</p>
+                                            <p className="text-sm font-bold text-red-700 truncate">{v.vaccine_name}</p>
+                                            <p className="text-xs text-red-600">Venceu em {new Date(v.scheduled_date).toLocaleDateString('pt-BR')}</p>
                                         </div>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-red-600 hover:bg-red-100 shrink-0"
+                                            onClick={() => completeVaccine.mutate(v.id)}
+                                            disabled={completeVaccine.isPending}
+                                        >
+                                            <Check className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 ))}
                                 {vaccineData?.upcoming?.slice(0, 3).map((v) => (
-                                    <div key={v.id} className="flex items-center gap-3 rounded-md border border-green-100 bg-green-50 p-2">
-                                        <Syringe className="h-4 w-4 text-green-600 shrink-0" />
+                                    <div key={v.id} className="flex items-center gap-3 rounded-xl border border-green-100 bg-green-50 p-2.5">
+                                        <Syringe className="h-5 w-5 text-green-600 shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-green-700 truncate">{v.vaccine_name}</p>
+                                            <p className="text-sm font-bold text-green-700 truncate">{v.vaccine_name}</p>
                                             <p className="text-xs text-green-600">Prevista para {new Date(v.scheduled_date).toLocaleDateString('pt-BR')}</p>
+                                        </div>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-green-600 hover:bg-green-100 shrink-0"
+                                            onClick={() => completeVaccine.mutate(v.id)}
+                                            disabled={completeVaccine.isPending}
+                                        >
+                                            <Check className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Row 3: Administering meds */}
+            <div className="grid gap-6">
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Pill className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle>Medicamentos em Uso</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {!medications || medications.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-6">Nenhum medicamento ativo registrado.</p>
+                        ) : (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {medications.map((m) => (
+                                    <div key={m.id} className="flex items-center gap-4 rounded-xl border p-4 bg-muted/30">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 shrink-0">
+                                            <Pill className="h-5 w-5 text-purple-600" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between">
+                                                <p className="font-bold text-sm text-gray-900 truncate">{m.name}</p>
+                                                <Badge variant="outline" className="text-[10px] py-0">{m.pet_name}</Badge>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground truncate">{m.dosage} · {m.frequency}</p>
                                         </div>
                                     </div>
                                 ))}

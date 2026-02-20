@@ -45,6 +45,10 @@ class MedicationResponse(MedicationBase):
         from_attributes = True
 
 
+class MedicationResponseWithPet(MedicationResponse):
+    pet_name: Optional[str] = None
+
+
 class MedicationLogCreate(BaseModel):
     administered_at: datetime
     administered_by: Optional[str] = None

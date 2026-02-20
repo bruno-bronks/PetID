@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PawPrint, Loader2, ArrowLeft } from 'lucide-react';
 import api from '@/lib/axios';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -75,15 +76,20 @@ export default function RegisterPage() {
             });
 
             setSuccess(true);
+            toast.success('Conta criada com sucesso! Redirecionando...');
             setTimeout(() => {
                 router.push('/login');
             }, 2000);
         } catch (err: unknown) {
             const error = err as { response?: { data?: { detail?: string } } };
-            if (error.response?.data?.detail === 'Email já cadastrado') {
+            const message = error.response?.data?.detail || 'Erro ao criar conta. Tente novamente.';
+
+            if (message === 'Email já cadastrado') {
                 setError('Este email já está cadastrado. Tente fazer login.');
+                toast.error('Este email já está cadastrado.');
             } else {
-                setError('Erro ao criar conta. Tente novamente.');
+                setError(message);
+                toast.error(message);
             }
         } finally {
             setIsLoading(false);
