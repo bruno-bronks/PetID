@@ -45,6 +45,87 @@ from app.models.medication import Medication
 
 # ==================== PERFIL PÚBLICO (QR CODE) ====================
 
+
+class PetIdentifiedProfile(PetPublicProfile):
+    """Perfil do pet identificado por biometria (com telefone completo)"""
+    pass
+
+
+@router.get("/pet/{pet_id}/identified", response_model=PetIdentifiedProfile)
+async def get_identified_pet_profile(
+    pet_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Obtém perfil completo de um pet identificado por biometria.
+
+    Este endpoint retorna o telefone completo do tutor para permitir
+    contato direto quando alguém identifica um pet pelo focinho.
+    Usado principalmente para ajudar a reunir pets perdidos.
+    """
+    pet = db.query(Pet).filter(Pet.id == pet_id).first()
+
+    if not pet:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pet não encontrado"
+        )
+
+    # Verifica se tem reporte de perdido ativo
+    is_lost = db.query(LostPetReport).filter(
+        LostPetReport.pet_id == pet_id,
+        LostPetReport.report_type == 'lost',
+        LostPetReport.status == 'active'
+    ).first() is not None
+
+    # Verifica se tem biometria
+    has_biometry = db.query(SnoutBiometry).filter(
+        SnoutBiometry.pet_id == pet_id,
+        SnoutBiometry.is_active == True
+    ).first() is not None
+
+    # Busca vacinas recentes (últimas 5)
+    vaccines = db.query(MedicalRecord).filter(
+        MedicalRecord.pet_id == pet_id,
+        MedicalRecord.type == 'vaccine'
+    ).order_by(MedicalRecord.event_date.desc()).limit(5).all()
+
+    # Busca medicamentos ativos
+    active_meds = db.query(Medication).filter(
+        Medication.pet_id == pet_id,
+        Medication.is_active == True
+    ).all()
+
+    # Busca dados do dono - TELEFONE COMPLETO para identificação por biometria
+    owner = db.query(User).filter(User.id == pet.owner_id).first()
+
+    return PetIdentifiedProfile(
+        id=pet.id,
+        name=pet.name,
+        species=pet.species,
+        breed=pet.breed,
+        sex=pet.sex,
+        photo_url=pet.photo_url,
+        is_lost=is_lost,
+        owner_name=owner.full_name if owner else None,
+        owner_phone=owner.phone if owner else None,  # Telefone COMPLETO
+        has_biometry=has_biometry,
+        vaccines=[
+            {"title": v.title, "event_date": v.event_date}
+            for v in vaccines
+        ],
+        active_medications=[
+            {
+                "name": m.name,
+                "dosage": m.dosage,
+                "frequency": m.frequency,
+                "is_active": m.is_active
+            }
+            for m in active_meds
+        ]
+    )
+
+
 @router.get("/pet/{pet_id}", response_model=PetPublicProfile)
 async def get_public_pet_profile(
     pet_id: int,
