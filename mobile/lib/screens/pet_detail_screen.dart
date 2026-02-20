@@ -7,13 +7,8 @@ import '../services/vaccine_service.dart';
 import '../services/veterinarian_service.dart';
 import '../services/medication_service.dart';
 import '../services/document_service.dart';
-import 'add_record_screen.dart';
-import 'snout_scanner_screen.dart';
-import 'vaccines_screen.dart';
-import 'pet_qr_code_screen.dart';
-import 'veterinarians_screen.dart';
-import 'medications_screen.dart';
 import 'documents_screen.dart';
+import 'add_pet_screen.dart';
 
 class PetDetailScreen extends StatefulWidget {
   final int petId;
@@ -126,7 +121,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
 
       setState(() => _isUploadingPhoto = true);
 
-      await Future.delayed(const Duration(seconds: 1));
+      await _petService.uploadPhoto(widget.petId, pickedFile.path);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -321,10 +316,16 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.white),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Edição em desenvolvimento')),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddPetScreen(pet: _pet),
+                        ),
                       );
+                      if (result == true) {
+                        _loadData();
+                      }
                     },
                   ),
                 ],
@@ -634,7 +635,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                 MaterialPageRoute(
                   builder: (context) => SnoutScannerScreen(
                     petId: widget.petId,
-                    mode: ScannerMode.verify,
+                    mode: ScannerMode.search,
                   ),
                 ),
               );
@@ -716,7 +717,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
             ],
           ),
 
-          if (_pet?['notes'] != null && _pet?['notes'].toString().isNotEmpty) ...[
+          if (_pet?['notes'] != null && _pet?['notes'].toString().isNotEmpty == true) ...[
             const SizedBox(height: 16),
             _buildInfoCard(
               title: 'Observações',
