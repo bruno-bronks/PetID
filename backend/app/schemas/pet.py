@@ -12,6 +12,7 @@ class PetBase(BaseModel):
     weight: Optional[str] = None
     is_castrated: bool = False
     microchip: Optional[str] = None
+    color: Optional[str] = None
     photo_url: Optional[str] = None
     notes: Optional[str] = None
 
@@ -29,6 +30,7 @@ class PetUpdate(BaseModel):
     weight: Optional[str] = None
     is_castrated: Optional[bool] = None
     microchip: Optional[str] = None
+    color: Optional[str] = None
     photo_url: Optional[str] = None
     notes: Optional[str] = None
 

@@ -28,63 +28,46 @@ async def upload_pet_photo(
     pet = check_pet_access(pet_id, current_user, db)
 
     # Validar tipo de imagem
-    allowed_types = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
-    if file.content_type not in allowed_types:
+    allowed_types = ["image/jpeg", "image/png", "image/jpg", "image/webp", "image/heic", "image/heif"]
+    content_type = file.content_type.lower() if file.content_type else ""
+    
+    if content_type not in allowed_types and not content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Use uma imagem JPEG, PNG ou WebP.",
+            detail=f"Tipo de arquivo não suportado ({content_type}). Use uma imagem JPEG, PNG ou WebP.",
         )
-
-    s3_client = get_s3_client()
-    bucket = settings.S3_BUCKET
-
-    # Garante que o bucket existe
-    try:
-        s3_client.head_bucket(Bucket=bucket)
-    except ClientError:
-        s3_client.create_bucket(Bucket=bucket)
-
-    # Remove foto antiga se existir
-    if pet.photo_url:
-        try:
-            old_key = pet.photo_url.split(f"{bucket}/")[-1].split("?")[0]
-            s3_client.delete_object(Bucket=bucket, Key=old_key)
-        except Exception:
-            pass
-
-    # Upload nova foto
+    import os
+    # Diretório local para uploads (mapeado via volume no docker)
+    upload_dir = "/app/uploads/photos"
+    os.makedirs(f"{upload_dir}/{pet_id}", exist_ok=True)
+    
     file_ext = (file.filename or "photo").rsplit(".", 1)[-1].lower()
-    s3_key = f"photos/{pet_id}/{uuid.uuid4()}.{file_ext}"
+    unique_name = f"{uuid.uuid4()}.{file_ext}"
+    file_path = f"{upload_dir}/{pet_id}/{unique_name}"
+    
     try:
         file_content = await file.read()
-        s3_client.put_object(
-            Bucket=bucket,
-            Key=s3_key,
-            Body=file_content,
-            ContentType=file.content_type,
-        )
+        with open(file_path, "wb") as f:
+            f.write(file_content)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao fazer upload: {str(e)}",
+            detail=f"Erro ao salvar foto localmente: {str(e)}",
         )
 
-    # Gera presigned URL (24h) para usar como photo_url
-    try:
-        photo_url = s3_client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket, "Key": s3_key},
-            ExpiresIn=86400,
-        )
-    except Exception:
-        photo_url = f"{settings.S3_ENDPOINT}/{bucket}/{s3_key}"
+    # A URL que será devolvida aponta para o Nginx que servirá a pasta /uploads
+    # Ex: https://148.230.79.134/uploads/photos/5/uuid.jpg
+    # O settings.S3_ENDPOINT deixará de ser usado para fotos
+    
+    # Assumindo que a API roda em /api/v1 e o Nginx servirá /uploads na raiz
+    host_url = "https://148.230.79.134"
+    photo_url = f"{host_url}/uploads/photos/{pet_id}/{unique_name}"
 
-    # Persiste a chave S3 no pet (usando a chave, não URL assinada)
-    # Armazenamos a chave para gerar presigned URL sob demanda
-    pet.photo_url = f"{settings.S3_ENDPOINT}/{bucket}/{s3_key}"
+    # Persiste a URL pública no banco
+    pet.photo_url = photo_url
     db.commit()
 
-    return {"photo_url": photo_url, "s3_key": s3_key}
+    return {"photo_url": photo_url, "file_path": file_path}
 
 
 
@@ -95,8 +78,8 @@ def get_s3_client():
         endpoint_url=settings.S3_ENDPOINT,
         aws_access_key_id=settings.S3_ACCESS_KEY,
         aws_secret_access_key=settings.S3_SECRET_KEY,
-        config=Config(signature_version='s3v4'),
         region_name=settings.S3_REGION,
+        config=Config(signature_version='s3', s3={'addressing_style': 'path'})
     )
 
 

@@ -1,18 +1,20 @@
 import 'api_service.dart';
+import '../models/pet.dart';
 
 class PetService {
   final ApiService _api = ApiService();
   
   /// Lista todos os pets do usuário
-  Future<List<dynamic>> listPets() async {
+  Future<List<Pet>> listPets() async {
     final response = await _api.get('/pets');
-    return response as List<dynamic>;
+    final list = response as List<dynamic>;
+    return list.map((json) => Pet.fromJson(json)).toList();
   }
   
   /// Obtém detalhes de um pet
-  Future<Map<String, dynamic>> getPet(int petId) async {
+  Future<Pet> getPet(int petId) async {
     final response = await _api.get('/pets/$petId');
-    return response;
+    return Pet.fromJson(response);
   }
   
   /// Cria um novo pet
@@ -23,6 +25,7 @@ class PetService {
     String? sex, // 'male', 'female', 'unknown'
     String? birthDate, // YYYY-MM-DD
     String? weight,
+    String? color,
     bool isCastrated = false,
     String? microchip,
     String? notes,
@@ -31,6 +34,7 @@ class PetService {
       'name': name,
       'species': species,
       if (breed != null) 'breed': breed,
+      if (color != null) 'color': color,
       if (sex != null) 'sex': sex,
       if (birthDate != null) 'birth_date': birthDate,
       if (weight != null) 'weight': weight,

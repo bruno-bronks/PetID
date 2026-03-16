@@ -80,6 +80,7 @@ services:
     volumes:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
+      - ./uploads:/app/uploads
     networks:
       - petid_network
 
@@ -108,7 +109,8 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/letsencrypt:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./uploads:/var/www/uploads:ro
     networks:
       - petid_network
 

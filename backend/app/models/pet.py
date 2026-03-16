@@ -17,6 +17,7 @@ class Pet(Base):
     weight = Column(String, nullable=True)
     is_castrated = Column(Boolean, default=False)
     microchip = Column(String, nullable=True, unique=True)
+    color = Column(String, nullable=True)
     photo_url = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

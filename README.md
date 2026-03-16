@@ -1,147 +1,63 @@
-# 🐾 PetID - Sistema de Identificação de Pets
+# 🐾 PetID - O Super App Definitivo para Pets
 
-Sistema completo de identificação e gerenciamento de pets com **biometria por focinho usando Machine Learning**.
+Sistema de vanguarda tecnológica para identificação, saúde e segurança pet, integrando **IA de última geração, Biometria Real, Rede Comunitária e Infraestrutura Distribuída**.
 
-## 🚀 Funcionalidades
+## 🚀 Funcionalidades Super App (Vanguarda)
 
-- ✅ **Autenticação e autorização** (JWT)
-- ✅ **Cadastro de pets** com fotos e informações completas
-- ✅ **Prontuário médico** digital
-- ✅ **Biometria por focinho** usando ML (MegaDescriptor)
-- ✅ **Busca por similaridade** de focinhos
-- ✅ **Vacinas e medicamentos**
-- ✅ **Documentos** e anexos (S3/MinIO)
-- ✅ **Auditoria** completa
-- ✅ **API REST** com FastAPI
+### 🧠 Inteligência Artificial (Powered by Google Gemini)
+- ✅ **Deep Health**: Análise OCR/Vision de exames laboratoriais e sugestões clínicas.
+- ✅ **Smart Diet**: Escaneamento de rótulos de ração com análise de toxicidade e qualidade nutricional.
+- ✅ **Behavioral AI**: Análise biomecânica via vídeo para detecção de dor, ansiedade e problemas ortopédicos.
 
-## 🧠 Machine Learning
+### 🚨 Segurança e Solidariedade
+- ✅ **Modo SOS**: Acionamento de pânico comunitário com alertas geolocalizados em tempo real.
+- ✅ **Bio-Banco**: Rede solidária de doadores de sangue pet com busca por compatibilidade local.
+- ✅ **Pet Trust**: Sistema de planejamento de legado e guardiões de emergência.
 
-O sistema utiliza **biometria real** para re-identificação de pets:
+### 🧬 Biometria e Identificação
+- ✅ **Biometria por Focinho**: Re-identificação real usando Machine Learning (MegaDescriptor-T-224).
+- ✅ **Smart Ledger**: Garantia de autenticidade de prontuários médicos via Blockchain POC (Hashes imutáveis).
 
-- **Modelo:** MegaDescriptor-T-224 (Swin Transformer)
-- **Dimensões:** 768-dimensional embeddings
-- **Busca:** Similaridade de cosseno com pgvector
-- **Validação:** Qualidade de imagem (brilho, nitidez, contraste)
-- **Performance:** ~0.2s por imagem (CPU)
+### 📱 Experiência Mobile (Flutter)
+- ✅ **Dashboard Premium**: Interface "Glassmorphism" com micro-interações fluidas.
+- ✅ **Travel Manager**: Gerador de checklists para viagens nacionais e internacionais.
+- ✅ **IoT Hub Sync**: Integração com coleiras GPS, comedouros e fontes inteligentes.
+- ✅ **Gamificação**: Sistema de medalhas (Badges) para incentivo à tutela responsável.
 
 ## 🛠️ Tecnologias
 
-**Backend:**
-- Python 3.12
-- FastAPI
-- PostgreSQL + pgvector
-- Redis
-- MinIO (S3)
-- Docker
+**Mobile:** 
+- Flutter 3.x + Provider (State Management)
+- Google Generative AI (Gemini Flash/Vision)
+- Google Maps SDK
+- Local Storage + Secure Storage (AES-256)
 
-**Machine Learning:**
-- PyTorch
-- Transformers (HuggingFace)
-- timm
-- OpenCV
-
-## 📦 Instalação
-
-### Requisitos
+**Backend & ML:**
+- FastAPI (Python 3.12)
+- PostgreSQL + pgvector (Embeddings Search)
+- PyTorch + Transformers (ML Biometry)
+- Redis (Caching & Tasks)
 - Docker & Docker Compose
-- Python 3.11+ (para desenvolvimento local)
 
-### Setup Rápido
+## 📦 Instalação e Uso
 
-1. **Clone o repositório:**
-```bash
-git clone https://github.com/bruno-bronks/PetID.git
-cd PetID
-```
+### Frontend Mobile
+1. Navegue até `/mobile`
+2. Execute `flutter pub get`
+3. Execute `flutter run`
 
-2. **Configure variáveis de ambiente:**
-```bash
-cp backend/.env.example backend/.env
-# Edite o .env conforme necessário
-```
-
-3. **Inicie os containers:**
-```bash
-docker-compose up -d
-```
-
-4. **Execute as migrações:**
-```bash
-docker-compose exec api alembic upgrade head
-```
-
-5. **Acesse a API:**
-- Documentação: http://localhost:8001/docs
-- Healthcheck: http://localhost:8001/health
-
-### Instalação do ML (Local)
-
-Para desenvolvimento local com ML:
-
-```bash
-cd backend
-pip install -r requirements.txt
-python test_ml_installation.py
-```
-
-Consulte [ML_UPGRADE_GUIDE.md](backend/ML_UPGRADE_GUIDE.md) para mais detalhes.
-
-## 📚 Documentação
-
-- **API Docs:** http://localhost:8001/docs (Swagger)
-- **ML Guide:** [backend/ML_UPGRADE_GUIDE.md](backend/ML_UPGRADE_GUIDE.md)
-- **Migrações:** [backend/alembic/versions/](backend/alembic/versions/)
-
-## 🧪 Testes
-
-```bash
-# Testar instalação do ML
-cd backend
-python test_ml_installation.py
-
-# Testes da API (TODO)
-pytest
-```
-
-## 📊 Estrutura do Projeto
-
-```
-PetID/
-├── backend/
-│   ├── app/
-│   │   ├── api/          # Endpoints da API
-│   │   ├── models/       # Modelos do banco
-│   │   ├── schemas/      # Schemas Pydantic
-│   │   └── services/     # Lógica de negócio + ML
-│   ├── alembic/          # Migrações do banco
-│   ├── requirements.txt  # Dependências Python
-│   └── Dockerfile
-├── docker-compose.yml
-└── README.md
-```
-
-## 🔐 Segurança
-
-- Autenticação JWT
-- Bcrypt para senhas
-- Sanitização de inputs
-- Rate limiting (TODO)
-- CORS configurável
-
-## 📝 Licença
-
-Este projeto é privado e proprietário.
-
-## 👤 Autor
-
-**Bruno Bronks**
-- GitHub: [@bruno-bronks](https://github.com/bruno-bronks)
-
-## 🤝 Contribuindo
-
-Este é um projeto privado. Contribuições são bem-vindas mediante aprovação.
+### Backend e ML
+Consulte o [SETUP_COMPLETO.md](SETUP_COMPLETO.md) para instruções detalhadas de Docker e configuração de ambiente.
 
 ---
 
-**Versão:** 1.0.0 (ML Real com MegaDescriptor)  
-**Última atualização:** 2026-02-12
+## 🏁 Conclusão
+O PetID não é apenas um app, é o ecossistema digital mais completo da categoria, focado em transformar a vida de pets e tutores através da inovação responsável.
+
+## 👤 Autor
+**Bruno Bronks**
+- GitHub: [@bruno-bronks](https://github.com/bruno-bronks)
+
+---
+**Versão:** 2.0.0 (Super App Frontier Edition)  
+**Última atualização:** 2026-03-10

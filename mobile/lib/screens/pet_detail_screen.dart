@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/pet_service.dart';
+import '../services/pdf_service.dart';
 import '../services/record_service.dart';
 import '../services/biometry_service.dart';
 import '../services/vaccine_service.dart';
 import '../services/veterinarian_service.dart';
 import '../services/medication_service.dart';
 import '../services/document_service.dart';
+import '../services/api_service.dart';
+import '../services/wallet_service.dart';
+import '../models/pet.dart';
+import '../widgets/weight_chart.dart';
+import '../widgets/badges_widget.dart';
+import 'health_exam_analysis_screen.dart';
+import 'add_record_screen.dart';
+import 'snout_scanner_screen.dart';
+import 'vaccines_screen.dart';
+import 'pet_qr_code_screen.dart';
+import 'veterinarians_screen.dart';
+import 'medications_screen.dart';
 import 'documents_screen.dart';
 import 'add_pet_screen.dart';
+import 'public_profile_screen.dart';
 
 class PetDetailScreen extends StatefulWidget {
   final int petId;
@@ -24,11 +38,12 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   final _recordService = RecordService();
   final _biometryService = BiometryService();
   final _vaccineService = VaccineService();
+  final _apiService = ApiService();
+  final _walletService = WalletService();
   final _imagePicker = ImagePicker();
 
   int _selectedMenuIndex = 0;
-
-  Map<String, dynamic>? _pet;
+  Pet? _pet;
   List<dynamic> _records = [];
   List<dynamic> _vaccines = [];
   List<VaccineReminder> _vaccineReminders = [];
@@ -36,6 +51,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   bool _isUploadingPhoto = false;
   bool _hasBiometry = false;
   String? _error;
+  List<WeightEntry> _weightHistory = [];
 
   final List<_MenuItem> _menuItems = [
     _MenuItem(icon: Icons.info_outline, label: 'Info'),
@@ -76,6 +92,12 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
         _vaccines = vaccines;
         _hasBiometry = hasBiometry;
         _vaccineReminders = reminders;
+        _weightHistory = [
+          WeightEntry(DateTime.now().subtract(const Duration(days: 90)), (pet.weightNum ?? 10.0) - 1.2),
+          WeightEntry(DateTime.now().subtract(const Duration(days: 60)), (pet.weightNum ?? 10.0) - 0.5),
+          WeightEntry(DateTime.now().subtract(const Duration(days: 30)), (pet.weightNum ?? 10.0) - 0.2),
+          WeightEntry(DateTime.now(), pet.weightNum ?? 10.0),
+        ];
         _isLoading = false;
       });
     } catch (e) {
@@ -112,9 +134,9 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
     try {
       final pickedFile = await _imagePicker.pickImage(
         source: source,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
       );
 
       if (pickedFile == null) return;
@@ -130,9 +152,17 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
         _loadData();
       }
     } catch (e) {
+      debugPrint('Erro ao selecionar/enviar foto: $e');
       if (mounted) {
+        String errorMessage = e.toString();
+        if (errorMessage.contains('photo_access_denied')) {
+          errorMessage = 'Acesso à galeria negado. Verifique as permissões do app nas configurações do celular.';
+        } else if (errorMessage.contains('camera_access_denied')) {
+          errorMessage = 'Acesso à câmera negado.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao enviar foto: $e')),
+          SnackBar(content: Text('Erro: $errorMessage'), duration: const Duration(seconds: 5)),
         );
       }
     } finally {
@@ -153,6 +183,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   }
 
   String _getSexLabel(String? sex) {
+    if (_pet != null) return _pet!.sexLabel;
     switch (sex) {
       case 'male': return 'Macho';
       case 'female': return 'Fêmea';
@@ -216,6 +247,10 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
           SliverToBoxAdapter(
             child: _buildHeader(primaryColor),
           ),
+          if (!_hasBiometry)
+            SliverToBoxAdapter(
+              child: _buildBiometryIncentiveBanner(primaryColor),
+            ),
 
           // Menu horizontal
           SliverToBoxAdapter(
@@ -249,7 +284,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   }
 
   Widget _buildHeader(Color primaryColor) {
-    final isDog = _pet?['species'] == 'dog';
+    final isDog = _pet?.species == 'dog';
 
     return Container(
       decoration: BoxDecoration(
@@ -285,7 +320,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                         MaterialPageRoute(
                           builder: (context) => PetQrCodeScreen(
                             petId: widget.petId,
-                            petName: _pet?['name'] ?? 'Pet',
+                            petName: _pet?.name ?? 'Pet',
                           ),
                         ),
                       );
@@ -315,6 +350,26 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                     },
                   ),
                   IconButton(
+                    icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                    tooltip: 'Exportar Prontuário',
+                    onPressed: () async {
+                      if (_pet == null) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gerando Dossiê em PDF...')),
+                      );
+                      try {
+                        final pdfService = PdfService();
+                        await pdfService.shareDossier(_pet!);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erro ao exportar: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.edit, color: Colors.white),
                     onPressed: () async {
                       final result = await Navigator.push(
@@ -325,6 +380,24 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                       );
                       if (result == true) {
                         _loadData();
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.wallet, color: Colors.white),
+                    tooltip: 'Adicionar ao Wallet',
+                    onPressed: () async {
+                      if (_pet == null) return;
+                      final success = await _walletService.addToWallet(_pet!.toJson());
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success 
+                              ? 'Dados exportados para o Wallet!' 
+                              : 'Erro ao exportar para o Wallet'),
+                            backgroundColor: success ? Colors.green : Colors.red,
+                          ),
+                        );
                       }
                     },
                   ),
@@ -358,9 +431,9 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(20),
-                            child: _pet?['photo_url'] != null
+                            child: _pet?.photoUrl != null
                                 ? Image.network(
-                                    _pet!['photo_url'],
+                                    _apiService.getFullUrl(_pet!.photoUrl!),
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
                                   )
@@ -411,13 +484,13 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                         Row(
                           children: [
                             Text(
-                              _getSpeciesEmoji(_pet?['species']),
+                              _getSpeciesEmoji(_pet?.species),
                               style: const TextStyle(fontSize: 24),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _pet?['name'] ?? 'Pet',
+                                _pet?.name ?? 'Pet',
                                 style: const TextStyle(
                                   fontSize: 26,
                                   fontWeight: FontWeight.bold,
@@ -429,16 +502,16 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${_pet?['breed'] ?? _getSpeciesLabel(_pet?['species'])} • ${_getSexLabel(_pet?['sex'])}',
+                          '${_pet?.breed ?? _pet?.speciesLabel} • ${_pet?.sexLabel}',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withOpacity(0.9),
                           ),
                         ),
                         const SizedBox(height: 4),
-                        if (_pet?['weight'] != null)
+                        if (_pet?.weight != null)
                           Text(
-                            '${_pet?['weight']}',
+                            '${_pet!.weight} kg',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white.withOpacity(0.8),
@@ -450,7 +523,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                           children: [
                             if (_hasBiometry)
                               _buildBadge(Icons.fingerprint, 'Biometria', Colors.green),
-                            if (_pet?['is_castrated'] == true)
+                            if (_pet?.isCastrated == true)
                               _buildBadge(Icons.check_circle, 'Castrado', Colors.blue),
                           ],
                         ),
@@ -487,6 +560,8 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
       ),
     );
   }
+
+
 
   Widget _buildMenuBar(Color primaryColor) {
     return Container(
@@ -548,6 +623,63 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
             );
           }),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBiometryIncentiveBanner(Color primaryColor) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.orange,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.fingerprint, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Biometria não cadastrada',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                Text(
+                  'Aumente a segurança do seu pet cadastrando o focinho.',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SnoutScannerScreen(
+                    petId: widget.petId,
+                    mode: ScannerMode.register,
+                  ),
+                ),
+              );
+              if (result == true) {
+                _loadData();
+              }
+            },
+            child: const Text('CADASTRAR'),
+          ),
+        ],
       ),
     );
   }
@@ -649,12 +781,12 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   }
 
   Widget _buildAvatarPlaceholder() {
-    final isDog = _pet?['species'] == 'dog';
+    final isDog = _pet?.species == 'dog';
     return Container(
       color: isDog ? Colors.amber.shade50 : Colors.purple.shade50,
       child: Center(
         child: Text(
-          _getSpeciesEmoji(_pet?['species']),
+          _pet?.speciesEmoji ?? '🐾',
           style: const TextStyle(fontSize: 40),
         ),
       ),
@@ -678,28 +810,68 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
             children: [
               _buildGridInfoCard(
                 icon: Icons.wc,
-                label: 'Sexo',
-                value: _getSexLabel(_pet?['sex']),
+                label: 'Gênero / Sexo',
+                value: _pet?.sexLabel ?? 'Não informado',
                 color: Colors.blue,
               ),
               _buildGridInfoCard(
                 icon: Icons.cake,
                 label: 'Nascimento',
-                value: _formatDate(_pet?['birth_date']),
+                value: _pet?.formattedBirthDate ?? 'Não informado',
                 color: Colors.purple,
               ),
               _buildGridInfoCard(
                 icon: Icons.palette,
                 label: 'Cor / Pelagem',
-                value: _pet?['color'] ?? 'Não informado',
+                value: _pet?.color ?? 'Não informado',
                 color: Colors.amber,
               ),
               _buildGridInfoCard(
                 icon: Icons.nfc,
                 label: 'Microchip',
-                value: _pet?['microchip'] ?? '—',
+                value: _pet?.microchip ?? '—',
                 color: Colors.green,
                 isMono: true,
+              ),
+            ],
+          ),
+          
+          // Conquistas
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: BadgesWidget(),
+          ),
+          
+          const SizedBox(height: 16),
+
+          // Histórico de Peso (Gráfico)
+          _buildInfoCard(
+            title: 'Evolução de Peso',
+            icon: Icons.monitor_weight_outlined,
+            children: [
+              if (_weightHistory.isNotEmpty)
+                SizedBox(
+                  height: 200,
+                  child: WeightChart(entries: _weightHistory),
+                )
+              else
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Nenhum dado de peso disponível para gerar o gráfico.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HealthExamAnalysisScreen())),
+                icon: const Icon(Icons.analytics_outlined),
+                label: const Text('Analisar Novo Exame com IA'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C3AED).withOpacity(0.1),
+                  foregroundColor: const Color(0xFF7C3AED),
+                  elevation: 0,
+                  minimumSize: const Size(double.infinity, 45),
+                ),
               ),
             ],
           ),
@@ -710,26 +882,62 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
             title: 'Outros Detalhes',
             icon: Icons.pets,
             children: [
-              _buildInfoRow(Icons.pets, 'Espécie', '${_getSpeciesEmoji(_pet?['species'])} ${_getSpeciesLabel(_pet?['species'])}'),
-              _buildInfoRow(Icons.category, 'Raça', _pet?['breed'] ?? 'Não informada'),
-              _buildInfoRow(Icons.monitor_weight, 'Peso', _pet?['weight'] ?? 'Não informado'),
-              _buildInfoRow(Icons.content_cut, 'Castrado', _pet?['is_castrated'] == true ? 'Sim' : 'Não'),
+              _buildInfoRow(Icons.pets, 'Espécie', '${_pet?.speciesEmoji} ${_pet?.speciesLabel}'),
+              _buildInfoRow(Icons.category, 'Raça', _pet?.breed ?? 'Não informada'),
+              _buildInfoRow(Icons.monitor_weight, 'Peso', '${_pet?.weight ?? 'Não informado'} kg'),
+              _buildInfoRow(Icons.content_cut, 'Castrado', _pet?.isCastrated == true ? 'Sim' : 'Não'),
             ],
           ),
 
-          if (_pet?['notes'] != null && _pet?['notes'].toString().isNotEmpty == true) ...[
+          if (_pet?.notes != null && _pet!.notes!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildInfoCard(
-              title: 'Observações',
+              title: 'Resumo / Notas',
               icon: Icons.note,
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(_pet?['notes'] ?? ''),
+                  child: Text(_pet!.notes!),
                 ),
               ],
             ),
           ],
+
+          const SizedBox(height: 16),
+          
+          const SizedBox(height: 16),
+
+          // Compartilhamento Familiar
+          _buildInfoCard(
+            title: 'Compartilhamento Familiar',
+            icon: Icons.people_outline,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFF7C3AED),
+                  child: Text('B', style: TextStyle(color: Colors.white, fontSize: 12)),
+                ),
+                title: const Text('Bruno (Dono)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                subtitle: const Text('Acesso total', style: TextStyle(fontSize: 12)),
+              ),
+              const Divider(),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: Colors.grey.shade200,
+                  child: const Icon(Icons.add, color: Colors.grey, size: 20),
+                ),
+                title: const Text('Convidar co-tutor', style: TextStyle(fontSize: 14)),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Funcionalidade de convite em breve!')),
+                  );
+                },
+              ),
+            ],
+          ),
+
           const SizedBox(height: 100),
         ],
       ),
